@@ -332,31 +332,31 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		nameLine += ":";
 
 		if (nameObject.getFamilyName()) {
-			nameLine += nameObject.getFamilyName();
+			nameLine += VCardExporter._escapeString(nameObject.getFamilyName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getGivenName()) {
-			nameLine += nameObject.getGivenName();
+			nameLine += VCardExporter._escapeString(nameObject.getGivenName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getMiddleName()) {
-			nameLine += nameObject.getMiddleName();
+			nameLine += VCardExporter._escapeString(nameObject.getMiddleName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getHonorificPrefix()) {
-			nameLine += nameObject.getHonorificPrefix();
+			nameLine += VCardExporter._escapeString(nameObject.getHonorificPrefix());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getHonorificSuffix()) {
-			nameLine += nameObject.getHonorificSuffix();
+			nameLine += VCardExporter._escapeString(nameObject.getHonorificSuffix());
 		}
 
 		nameLine += "\r";
@@ -392,7 +392,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		fullNameLine += ":";
 
-		fullNameLine += displayValue + "\r";
+		fullNameLine += VCardExporter._escapeString(displayValue) + "\r";
 
 		this.vCardFileWriter.writeLine(fullNameLine);
 	},
@@ -418,7 +418,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		nicknameLine += VCard.MARKERS.NICKNAME + ":";
 
-		nicknameLine += nicknameValue + "\r";
+		nicknameLine += VCardExporter._escapeString(nicknameValue) + "\r";
 
 		this.vCardFileWriter.writeLine(nicknameLine);
 	},
@@ -447,7 +447,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		if (organizationValue) {
 			organizationLine += VCard.MARKERS.COMPANY + ":";
 
-			organizationLine += organizationValue + ";\r";
+			organizationLine += VCardExporter._escapeString(organizationValue) + ";\r";
 
 			this.vCardFileWriter.writeLine(organizationLine);
 		}
@@ -455,7 +455,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		if (jobTitleValue) {
 			jobTitleLine += VCard.MARKERS.JOBTITLE + ":";
 
-			jobTitleLine += jobTitleValue + "\r";
+			jobTitleLine += VCardExporter._escapeString(jobTitleValue) + "\r";
 
 			this.vCardFileWriter.writeLine(jobTitleLine);
 		}
@@ -498,7 +498,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			phoneNumberLine += ";" + label;
 		}
 
-		phoneNumberLine += ":" + phoneNumberValue + "\r";
+		phoneNumberLine += ":" + VCardExporter._escapeString(phoneNumberValue) + "\r";
 
 		this.vCardFileWriter.writeLine(phoneNumberLine);
 	},
@@ -527,7 +527,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		emailAddressLine += VCardExporter._buildCorrectLabelBasedOnVersion(this.vCardVersion, VCardExporter._getEmailLabels(emailAddress.getType()));
 
-		emailAddressLine += ":" + emailAddressValue + "\r";
+		emailAddressLine += ":" + VCardExporter._escapeString(emailAddressValue) + "\r";
 
 		this.vCardFileWriter.writeLine(emailAddressLine);
 	},
@@ -553,7 +553,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		imAddressLine += VCardExporter._getIMLabels(imAddress.getType()) + ":";
 
-		imAddressLine += imAddressValue + "\r";
+		imAddressLine += VCardExporter._escapeString(imAddressValue) + "\r";
 
 		this.vCardFileWriter.writeLine(imAddressLine);
 	},
@@ -580,7 +580,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		urlLine += VCard.MARKERS.URL + ";";
 		urlLine += VCardExporter._buildCorrectLabelBasedOnVersion(this.vCardVersion, VCardExporter._getUrlLabels(urlObject.getType())) + ":";
 
-		urlLine += urlValue + "\r";
+		urlLine += VCardExporter._escapeString(urlValue) + "\r";
 
 		this.vCardFileWriter.writeLine(urlLine);
 	},
@@ -634,9 +634,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			return;
 		}
 
-		noteValue = noteValue.replace(/\n/g, "\\n");
-
-		noteValue = noteValue.replace(/\r/g, "\\r");
+		noteValue = VCardExporter._escapeString(noteValue);
 
 		noteLine += VCard.MARKERS.NOTE + ":";
 
@@ -726,34 +724,52 @@ VCardExporter._formatAddress = function (address) {
 	if (address.getStreetAddress()) {
 		// Will probably have newlines if we are dealing
 		// with an address that came from a freeform source
-		toReturn += address.getStreetAddress().replace(/\n/g, " ");
+		toReturn += VCardExporter._escapeString(address.getStreetAddress().replace(/\n/g, " "));
 	}
 
 	toReturn += ";";
 
 	if (address.getLocality()) {
-		toReturn += address.getLocality();
+		toReturn += VCardExporter._escapeString(address.getLocality());
 	}
 
 	toReturn += ";";
 
 	if (address.getRegion()) {
-		toReturn += address.getRegion();
+		toReturn += VCardExporter._escapeString(address.getRegion());
 	}
 
 	toReturn += ";";
 
 	if (address.getPostalCode()) {
-		toReturn += address.getPostalCode();
+		toReturn += VCardExporter._escapeString(address.getPostalCode());
 	}
 
 	toReturn += ";";
 
 	if (address.getCountry()) {
-		toReturn += address.getCountry();
+		toReturn += VCardExporter._escapeString(address.getCountry());
 	}
 
 	return toReturn;
+};
+
+/**
+ * PRIVATE
+ * Escape a string according to the vCard specification. Specifically, the following escape
+ * sequences are recognized:
+ *
+ * \ ====> \\
+ * ; ====> \;
+ * , ====> \,
+ * \n ====> \\n
+ * \r ====> \\r
+ *
+ * @param {string}  the string to escape
+ * @returns {string} the escaped string
+ */
+VCardExporter._escapeString = function (string) {
+	return StringUtils.escapeCommon(string, /(\\)|(;)|(,)|(\n)|(\r)/g, {"\\": "\\\\", ";": "\\;", ",": "\\,", "\n": "\\n", "\r": "\\r" });
 };
 
 /**
