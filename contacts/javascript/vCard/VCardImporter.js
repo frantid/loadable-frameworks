@@ -334,7 +334,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 */
 	_handlePhoneNumber: function (line) {
 		var toReturn = new PhoneNumber();
-		toReturn.setValue(this._getLineValue(line));
+		toReturn.setValue(this._unescapeString(this._getLineValue(line)));
 		toReturn.setType(this._setThisTypeIfUndefined(this._mapVCardValueToContactPointType(this._extractLabel(line), VCard.TYPES.PHONE_NUMBER), VCard.TYPES.PHONE_NUMBER.OTHER.CONTACT_POINT_VALUE));
 		return toReturn;
 	},
@@ -348,7 +348,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 */
 	_handleEmail: function (line) {
 		var toReturn = new EmailAddress();
-		toReturn.setValue(this._getLineValue(line));
+		toReturn.setValue(this._unescapeString(this._getLineValue(line)));
 		toReturn.setType(this._setThisTypeIfUndefined(this._mapVCardValueToContactPointType(this._extractLabel(line), VCard.TYPES.EMAIL), VCard.TYPES.EMAIL.OTHER.CONTACT_POINT_VALUE));
 		return toReturn;
 	},
@@ -377,7 +377,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 
 		// Need to figure out what this was used for at some point and time
 		//urlString = urlString.replace(/\\(.{1})/g, "$1");
-		toReturn.setValue(this._getLineValue(line));
+		toReturn.setValue(this._unescapeString(this._getLineValue(line)));
 		toReturn.setType(this._setThisTypeIfUndefined(this._mapVCardValueToContactPointType(this._extractLabel(line), VCard.TYPES.URL), VCard.TYPES.URL.OTHER.CONTACT_POINT_VALUE));
 		return toReturn;
 	},
@@ -415,7 +415,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 * @returns {Name} the Name object that represents the line from the vCard
 	 */
 	_handleName: function (line) {
-		var name = this._getLineValue(line),
+		var name = this._getLineValue(line), //unescape is done in splitValues.
 			namePieces = this._splitValues(name),
 			i = 0,
 			namePiece,
@@ -496,7 +496,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 			break;
 		}
 
-		im.setValue(this._getLineValue(line));
+		im.setValue(this._unescapeString(this._getLineValue(line)));
 		//im.setType(VCard.TYPES.IM_ADDRESS.OTHER.CONTACT_POINT_VALUE);
 
 		return im;
@@ -512,7 +512,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 * @returns {Organization} an organization object with the name value set.
 	 */
 	_handleCompanyName: function (line, organization) {
-		var companyString = this._getLineValue(line),
+		var companyString = this._getLineValue(line), //unescape is done in splitValues.
 			splitCompany = this._splitValues(companyString),
 			companyName = splitCompany[0];
 
@@ -556,7 +556,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 			poBox = "",
 			street = "",
 			extended = "",
-			addressValue = this._getLineValue(line),
+			addressValue = this._unescapeString(this._getLineValue(line)),
 			addressParts,
 			addressPart,
 			strippedAddress,
@@ -624,7 +624,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 * @returns {Relation} a relation object from the two lines passed in.
 	 */
 	_handleRelation: function (relationNameLine, relationTypeLine) {
-		var name = relationNameLine ? this._getLineValue(relationNameLine) : undefined,
+		var name = relationNameLine ? this._unescapeString(this._getLineValue(relationNameLine)) : undefined,
 			type = relationTypeLine ? this._setThisTypeIfUndefined(this._mapVCardValueToContactPointType(this._extractRelationLabel(relationTypeLine), VCard.TYPES.RELATION), VCard.TYPES.RELATION.OTHER.CONTACT_POINT_VALUE) : undefined;
 
 		if (name && type) {
