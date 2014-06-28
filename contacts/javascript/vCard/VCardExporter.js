@@ -202,6 +202,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			ims,
 			notes,
 			nameToUse,
+			relations,
 			i;
 
 		if (!person) {
@@ -259,6 +260,11 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			ims = person.getIms().getArray();
 			for (i = 0; i < ims.length; i += 1) {
 				this._writeIMAddressToVCard(ims[i]);
+			}
+
+			relations = person.getRelations().getArray();
+			for (i = 0; i < relations.length; i += 1) {
+				this._writeRelationToVCard(relations[i]);
 			}
 
 			this._writeBirthdayToVCard(person.getBirthday());
@@ -571,6 +577,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			return;
 		}
 
+		urlLine += VCard.MARKERS.URL + ";";
 		urlLine += VCardExporter._buildCorrectLabelBasedOnVersion(this.vCardVersion, VCardExporter._getUrlLabels(urlObject.getType())) + ":";
 
 		urlLine += urlValue + "\r";
@@ -636,6 +643,46 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		noteLine += noteValue + "\r";
 
 		this.vCardFileWriter.writeLine(noteLine);
+	},
+
+	/**
+	 * PRIVATE
+	 * only Spouse and Children relation added
+	 *
+	 */
+	_writeRelationToVCard: function (relationObject) {
+		if (!relationObject) {
+			return;
+		}
+
+		Assert.require(relationObject instanceof Relation, "Object passed to _writeRelationToVCard must be an instance of Relation");
+		var relationLine = "",
+			relationValue = relationObject.getValue(),
+			relationType = relationObject.getType();
+
+		if (!relationValue && !relationType) {
+			console.warn("VCardExporter bad relation passed into _writeRelationToVCard. Not writing relation.");
+			return;
+		}
+
+		switch (relationType) {
+		case 'type_spouse':
+			relationLine += VCard.MARKERS.SPOUSE_ONE_LINE + ":";
+			relationLine += relationValue + "\r";
+			break;
+		case 'type_child':
+			relationLine += VCard.MARKERS.CHILD_ONE_LINE + ":";
+			relationLine += relationValue + "\r";
+			break;
+		}
+
+		//for now only spouse and child is added in Vcard.MARKERS by Palm, thats why all other relations are ignored
+		if (relationLine === "") {
+			console.warn("VCardExporter undefined relation passed into _writeRelationToVCard. Not writing relation.");
+			return;
+		}
+
+		this.vCardFileWriter.writeLine(relationLine);
 	},
 
 	/**
