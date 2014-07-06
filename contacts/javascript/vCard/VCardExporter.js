@@ -54,15 +54,20 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		this.onlyPhoneNumber = false;
 	},
 
-	exportOne: function (personId, onlyPhoneNumber) {
+	exportOne: function (personId, onlyPhoneNumber, personObj) {
 		var filecacheFuture,
 			future = new Future();
 
-		future.now(this, function () {
-			Assert.require(personId, "personId passed to export was not truthy. export requires a valid personId to export");
-			this.onlyPhoneNumber = onlyPhoneNumber;
-			future.nest(Person.getDisplayablePersonAndContactsById(personId));
-		});
+		this.onlyPhoneNumber = onlyPhoneNumber;
+		if (personObj && typeof personObj === "object" && personObj instanceof Person) {
+			console.log("Using supplied person.");
+			future.result = personObj;
+		} else {
+			future.now(this, function () {
+				Assert.require(personId, "personId passed to export was not truthy. export requires a valid personId to export");
+				future.nest(Person.getDisplayablePersonAndContactsById(personId));
+			});
+		}
 
 		future.then(this, function () {
 			var person = future.result;
