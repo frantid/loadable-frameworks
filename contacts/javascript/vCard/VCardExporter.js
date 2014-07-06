@@ -54,7 +54,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		this.onlyPhoneNumber = false;
 	},
 
-	setVCardWriter: function (writer) {
+	setVCardFileWriter: function (writer) {
 		if (writer && typeof writer === "object") {
 			this.vCardFileWriter = writer;
 		}
