@@ -54,6 +54,12 @@ var VCardImporter = exports.vCardImporter = Class.create({
 		this.vCardFileReader = null;
 	},
 
+	setVCardFileReader: function (reader) {
+		if (reader && typeof reader === object) {
+			this.vCardFileReader = reader;
+		}
+	},
+
 	// Until foundations.IO support for reading ISO files is added, there is no support for ISO vCards. I.E. vCards from outlook
 
 	readVCard: function (processedContactCallback) {
@@ -85,7 +91,9 @@ var VCardImporter = exports.vCardImporter = Class.create({
 				throw new Error("importVCard exception: cannot specify a processedContactCallback parameter that is not a function");
 			}
 
-			this.vCardFileReader = new VCardFileReader({filePath: this.filePath});
+			if (this.vCardFileReader) {
+				this.vCardFileReader = new VCardFileReader({filePath: this.filePath});
+			}
 
 			future.result = true;
 		});
