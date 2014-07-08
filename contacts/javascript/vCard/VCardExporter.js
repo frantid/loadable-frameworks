@@ -54,15 +54,26 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		this.onlyPhoneNumber = false;
 	},
 
-	exportOne: function (personId, onlyPhoneNumber) {
+	setVCardFileWriter: function (writer) {
+		if (writer && typeof writer === "object") {
+			this.vCardFileWriter = writer;
+		}
+	},
+
+	exportOne: function (personId, onlyPhoneNumber, personObj) {
 		var filecacheFuture,
 			future = new Future();
 
-		future.now(this, function () {
-			Assert.require(personId, "personId passed to export was not truthy. export requires a valid personId to export");
-			this.onlyPhoneNumber = onlyPhoneNumber;
-			future.nest(Person.getDisplayablePersonAndContactsById(personId));
-		});
+		this.onlyPhoneNumber = onlyPhoneNumber;
+		if (personObj && typeof personObj === "object" && personObj instanceof Person) {
+			console.log("Using supplied person.");
+			future.result = personObj;
+		} else {
+			future.now(this, function () {
+				Assert.require(personId, "personId passed to export was not truthy. export requires a valid personId to export");
+				future.nest(Person.getDisplayablePersonAndContactsById(personId));
+			});
+		}
 
 		future.then(this, function () {
 			var person = future.result;
@@ -202,6 +213,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			ims,
 			notes,
 			nameToUse,
+			relations,
 			i;
 
 		if (!person) {
@@ -259,6 +271,11 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			ims = person.getIms().getArray();
 			for (i = 0; i < ims.length; i += 1) {
 				this._writeIMAddressToVCard(ims[i]);
+			}
+
+			relations = person.getRelations().getArray();
+			for (i = 0; i < relations.length; i += 1) {
+				this._writeRelationToVCard(relations[i]);
 			}
 
 			this._writeBirthdayToVCard(person.getBirthday());
@@ -326,31 +343,31 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		nameLine += ":";
 
 		if (nameObject.getFamilyName()) {
-			nameLine += nameObject.getFamilyName();
+			nameLine += VCardExporter._escapeString(nameObject.getFamilyName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getGivenName()) {
-			nameLine += nameObject.getGivenName();
+			nameLine += VCardExporter._escapeString(nameObject.getGivenName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getMiddleName()) {
-			nameLine += nameObject.getMiddleName();
+			nameLine += VCardExporter._escapeString(nameObject.getMiddleName());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getHonorificPrefix()) {
-			nameLine += nameObject.getHonorificPrefix();
+			nameLine += VCardExporter._escapeString(nameObject.getHonorificPrefix());
 		}
 
 		nameLine += ";";
 
 		if (nameObject.getHonorificSuffix()) {
-			nameLine += nameObject.getHonorificSuffix();
+			nameLine += VCardExporter._escapeString(nameObject.getHonorificSuffix());
 		}
 
 		nameLine += "\r";
@@ -386,7 +403,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		fullNameLine += ":";
 
-		fullNameLine += displayValue + "\r";
+		fullNameLine += VCardExporter._escapeString(displayValue) + "\r";
 
 		this.vCardFileWriter.writeLine(fullNameLine);
 	},
@@ -412,7 +429,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		nicknameLine += VCard.MARKERS.NICKNAME + ":";
 
-		nicknameLine += nicknameValue + "\r";
+		nicknameLine += VCardExporter._escapeString(nicknameValue) + "\r";
 
 		this.vCardFileWriter.writeLine(nicknameLine);
 	},
@@ -441,7 +458,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		if (organizationValue) {
 			organizationLine += VCard.MARKERS.COMPANY + ":";
 
-			organizationLine += organizationValue + ";\r";
+			organizationLine += VCardExporter._escapeString(organizationValue) + ";\r";
 
 			this.vCardFileWriter.writeLine(organizationLine);
 		}
@@ -449,7 +466,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		if (jobTitleValue) {
 			jobTitleLine += VCard.MARKERS.JOBTITLE + ":";
 
-			jobTitleLine += jobTitleValue + "\r";
+			jobTitleLine += VCardExporter._escapeString(jobTitleValue) + "\r";
 
 			this.vCardFileWriter.writeLine(jobTitleLine);
 		}
@@ -492,7 +509,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			phoneNumberLine += ";" + label;
 		}
 
-		phoneNumberLine += ":" + phoneNumberValue + "\r";
+		phoneNumberLine += ":" + VCardExporter._escapeString(phoneNumberValue) + "\r";
 
 		this.vCardFileWriter.writeLine(phoneNumberLine);
 	},
@@ -521,7 +538,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		emailAddressLine += VCardExporter._buildCorrectLabelBasedOnVersion(this.vCardVersion, VCardExporter._getEmailLabels(emailAddress.getType()));
 
-		emailAddressLine += ":" + emailAddressValue + "\r";
+		emailAddressLine += ":" + VCardExporter._escapeString(emailAddressValue) + "\r";
 
 		this.vCardFileWriter.writeLine(emailAddressLine);
 	},
@@ -547,7 +564,7 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		imAddressLine += VCardExporter._getIMLabels(imAddress.getType()) + ":";
 
-		imAddressLine += imAddressValue + "\r";
+		imAddressLine += VCardExporter._escapeString(imAddressValue) + "\r";
 
 		this.vCardFileWriter.writeLine(imAddressLine);
 	},
@@ -571,9 +588,10 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			return;
 		}
 
+		urlLine += VCard.MARKERS.URL + ";";
 		urlLine += VCardExporter._buildCorrectLabelBasedOnVersion(this.vCardVersion, VCardExporter._getUrlLabels(urlObject.getType())) + ":";
 
-		urlLine += urlValue + "\r";
+		urlLine += VCardExporter._escapeString(urlValue) + "\r";
 
 		this.vCardFileWriter.writeLine(urlLine);
 	},
@@ -627,15 +645,53 @@ var VCardExporter = exports.VCardExporter = Class.create({
 			return;
 		}
 
-		noteValue = noteValue.replace(/\n/g, "\\n");
-
-		noteValue = noteValue.replace(/\r/g, "\\r");
+		noteValue = VCardExporter._escapeString(noteValue);
 
 		noteLine += VCard.MARKERS.NOTE + ":";
 
 		noteLine += noteValue + "\r";
 
 		this.vCardFileWriter.writeLine(noteLine);
+	},
+
+	/**
+	 * PRIVATE
+	 * only Spouse and Children relation added
+	 *
+	 */
+	_writeRelationToVCard: function (relationObject) {
+		if (!relationObject) {
+			return;
+		}
+
+		Assert.require(relationObject instanceof Relation, "Object passed to _writeRelationToVCard must be an instance of Relation");
+		var relationLine = "",
+			relationValue = relationObject.getValue(),
+			relationType = relationObject.getType();
+
+		if (!relationValue && !relationType) {
+			console.warn("VCardExporter bad relation passed into _writeRelationToVCard. Not writing relation.");
+			return;
+		}
+
+		switch (relationType) {
+		case 'type_spouse':
+			relationLine += VCard.MARKERS.SPOUSE_ONE_LINE + ":";
+			relationLine += relationValue + "\r";
+			break;
+		case 'type_child':
+			relationLine += VCard.MARKERS.CHILD_ONE_LINE + ":";
+			relationLine += relationValue + "\r";
+			break;
+		}
+
+		//for now only spouse and child is added in Vcard.MARKERS by Palm, thats why all other relations are ignored
+		if (relationLine === "") {
+			console.warn("VCardExporter undefined relation passed into _writeRelationToVCard. Not writing relation.");
+			return;
+		}
+
+		this.vCardFileWriter.writeLine(relationLine);
 	},
 
 	/**
@@ -679,34 +735,52 @@ VCardExporter._formatAddress = function (address) {
 	if (address.getStreetAddress()) {
 		// Will probably have newlines if we are dealing
 		// with an address that came from a freeform source
-		toReturn += address.getStreetAddress().replace(/\n/g, " ");
+		toReturn += VCardExporter._escapeString(address.getStreetAddress().replace(/\n/g, " "));
 	}
 
 	toReturn += ";";
 
 	if (address.getLocality()) {
-		toReturn += address.getLocality();
+		toReturn += VCardExporter._escapeString(address.getLocality());
 	}
 
 	toReturn += ";";
 
 	if (address.getRegion()) {
-		toReturn += address.getRegion();
+		toReturn += VCardExporter._escapeString(address.getRegion());
 	}
 
 	toReturn += ";";
 
 	if (address.getPostalCode()) {
-		toReturn += address.getPostalCode();
+		toReturn += VCardExporter._escapeString(address.getPostalCode());
 	}
 
 	toReturn += ";";
 
 	if (address.getCountry()) {
-		toReturn += address.getCountry();
+		toReturn += VCardExporter._escapeString(address.getCountry());
 	}
 
 	return toReturn;
+};
+
+/**
+ * PRIVATE
+ * Escape a string according to the vCard specification. Specifically, the following escape
+ * sequences are recognized:
+ *
+ * \ ====> \\
+ * ; ====> \;
+ * , ====> \,
+ * \n ====> \\n
+ * \r ====> \\r
+ *
+ * @param {string}  the string to escape
+ * @returns {string} the escaped string
+ */
+VCardExporter._escapeString = function (string) {
+	return StringUtils.escapeCommon(string, /(\\)|(;)|(,)|(\n)|(\r)/g, {"\\": "\\\\", ";": "\\;", ",": "\\,", "\n": "\\n", "\r": "\\r" });
 };
 
 /**
