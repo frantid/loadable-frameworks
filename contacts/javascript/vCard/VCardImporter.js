@@ -55,7 +55,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	},
 
 	setVCardFileReader: function (reader) {
-		if (reader && typeof reader === object) {
+		if (reader && typeof reader === "object") {
 			this.vCardFileReader = reader;
 		}
 	},
