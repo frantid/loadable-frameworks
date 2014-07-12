@@ -55,7 +55,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	},
 
 	setVCardFileReader: function (reader) {
-		if (reader && typeof reader === object) {
+		if (reader && typeof reader === "object") {
 			this.vCardFileReader = reader;
 		}
 	},
@@ -91,7 +91,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 				throw new Error("importVCard exception: cannot specify a processedContactCallback parameter that is not a function");
 			}
 
-			if (this.vCardFileReader) {
+			if (!this.vCardFileReader) {
 				this.vCardFileReader = new VCardFileReader({filePath: this.filePath});
 			}
 
