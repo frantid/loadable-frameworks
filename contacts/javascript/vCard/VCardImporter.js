@@ -746,7 +746,7 @@ var VCardImporter = exports.vCardImporter = Class.create({
 	 * @returns {string} The part of the line after the seperator
 	 */
 	_getLineValue: function (line) {
-		line = Foundations.StringUtils.escapeHTML(line);
+		//line = Foundations.StringUtils.escapeHTML(line);
 		return line.substring(line.indexOf(VCard.MARKERS.SEPERATOR) + 1).replace(/\r$/, "");
 	},
 
