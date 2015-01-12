@@ -16,8 +16,8 @@
 //
 // @@@LICENSE
 
-/*jslint white: true, onevar: true, undef: true, eqeqeq: true, plusplus: true, bitwise: true,
-regexp: true, newcap: true, immed: true, nomen: false, maxerr: 500, plusplus: false, bitwise: false */
+/*jslint white: true, vars: true, undef: true, eqeq: true, plusplus: true, bitwise: true,
+regexp: true, newcap: true, nomen: true, maxerr: 500, plusplus: false, bitwise: false, sloppy: true */
 /*global exports, _, Class, Assert, JSON, Future, Utils, DB, PalmCall, VCardFileWriter, ContactBackupHash, PropertyArray, VCard, DefaultPropertyHash, Contact, ContactLinkable, Url, Name, Person, Nickname, Address, Organization, Birthday, PhoneNumber, EmailAddress, IMAddress, Note, console */
 
 var VCardExporter = exports.VCardExporter = Class.create({
@@ -47,8 +47,8 @@ var VCardExporter = exports.VCardExporter = Class.create({
 
 		this.filePath = obj.filePath;
 
-		this.vCardVersion = obj.version ?  obj.version : VCard.VERSIONS.THREE;
-		this.charset = obj.charset ? obj.charset : VCard.CHARSET.UTF8;
+		this.vCardVersion = obj.version || VCard.VERSIONS.THREE;
+		this.charset = obj.charset || VCard.CHARSET.UTF8;
 		this.useFileCache = obj.useFileCache || false;
 		this.vCardFileWriter = new VCardFileWriter({ filePath: this.filePath, charset: this.charset});
 		this.onlyPhoneNumber = false;
@@ -833,7 +833,7 @@ VCardExporter._build2_1TypeLabel = function (labels) {
  * @returns {string} the label portion for a 3.0 vCard line's label
  */
 VCardExporter._buildTypeLabelHelper = function (labels, seperator, prefix) {
-	var toReturn = prefix ? prefix : "",
+	var toReturn = prefix || "",
 		i;
 
 	for (i = 0; i < labels.length; i += 1) {
