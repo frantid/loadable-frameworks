@@ -677,11 +677,11 @@ var VCardExporter = exports.VCardExporter = Class.create({
 		switch (relationType) {
 		case 'type_spouse':
 			relationLine += VCard.MARKERS.SPOUSE_ONE_LINE + ":";
-			relationLine += relationValue + "\r";
+			relationLine += VCardExporter._escapeString(relationValue) + "\r";
 			break;
 		case 'type_child':
 			relationLine += VCard.MARKERS.CHILD_ONE_LINE + ":";
-			relationLine += relationValue + "\r";
+			relationLine += VCardExporter._escapeString(relationValue) + "\r";
 			break;
 		}
 
