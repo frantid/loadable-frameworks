@@ -161,50 +161,31 @@ PhoneNumber.prototype.__defineGetter__("x_displayType", function () {
 
 PhoneNumber.normalizePhoneNumber = function (numberParam, wantSearchFormat) {
 	var numberParamType = ObjectUtils.type(numberParam),
-		parsedPhoneNumber,
+		parsedPhoneNumber, normalizedNumber,
 		normalizedValue;
 
 	Assert.require(numberParamType === "object" || numberParamType === "string", "PhoneNumber.normalizePhoneNumber - number passed is not a string or an object");
 
 	//if it's not already parsed, we parse it
-	parsedPhoneNumber = (numberParamType === "string") ? Globalization.Phone.parsePhoneNumber(numberParam) : numberParam;
+	parsedPhoneNumber = (numberParamType === "string") ? PhoneNumberLib.Parse(numberParam, Globalization.Locale.getCurrentPhoneRegion().toUpperCase()) : numberParam
 
-	//if we get something empty back, just return the empty string
-	if (!parsedPhoneNumber || Object.keys(parsedPhoneNumber).length === 0) {
-		return "";
+	// try to be compatible with Enyo g11n
+	normalizedNumber = "";
+	if(!parsedPhoneNumber) {
+		// if the parse failed, fallback to a simple generic normalized value
+		normalizedNumber = "---" + numberParam + "-";
 	}
+	else {
+		// reverse of "+-countrycode-leading_digits-national_number_without_leading_digits-extension"
+		var phoneNatNumberWithoutLeadingDigits = parsedPhoneNumber.nationalNumber.substr(parsedPhoneNumber.leadingDigit.length);
 
-	normalizedValue = "";
-	if (parsedPhoneNumber.extension) {
-		normalizedValue += parsedPhoneNumber.extension.split("").reverse().join("");
-	}
-	normalizedValue += PhoneNumber.PART_DELIMITER;
-	if (parsedPhoneNumber.subscriberNumber) {
-		normalizedValue += parsedPhoneNumber.subscriberNumber.split("").reverse().join("");
-	} else if (parsedPhoneNumber.serviceCode) {
-		normalizedValue += parsedPhoneNumber.serviceCode.split("").reverse().join("");
-	} else if (parsedPhoneNumber.emergency) {
-		normalizedValue += parsedPhoneNumber.emergency.split("").reverse().join("");
-	} else if (parsedPhoneNumber.vsc) {
-		normalizedValue += parsedPhoneNumber.vsc.split("").reverse().join("");
-	}
-	normalizedValue += PhoneNumber.PART_DELIMITER;
-
-	if (!wantSearchFormat) {
-		if (parsedPhoneNumber.areaCode) {
-			normalizedValue += parsedPhoneNumber.areaCode.split("").reverse().join("");
+		if (!wantSearchFormat) {
+			normalizedNumber = "+-"+parsedPhoneNumber.regionMetaData.countryCode + "-" + parsedPhoneNumber.leadingDigit;
 		}
-		normalizedValue += PhoneNumber.PART_DELIMITER;
-		if (parsedPhoneNumber.countryCode) {
-			normalizedValue += parsedPhoneNumber.countryCode.split("").reverse().join("");
-		}
-		normalizedValue += PhoneNumber.PART_DELIMITER;
-		if (parsedPhoneNumber.iddPrefix) {
-			normalizedValue += parsedPhoneNumber.iddPrefix.split("").reverse().join("");
-		}
+		normalizedNumber += "-" + phoneNatNumberWithoutLeadingDigits + "-";
 	}
 
-	return normalizedValue;
+	return normalizedNumber.split("").reverse().join("");
 };
 
 //TODO: this should be removed in favor of Edwin's logic
