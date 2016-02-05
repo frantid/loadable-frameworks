@@ -137,7 +137,7 @@ var PhoneNumberLib = (function (dataBase) {
       ParseFormat(regionMetaData);
       var formats = regionMetaData.formats;
       if (!formats) {
-        return null;
+        return "";
       }
       for (var n = 0; n < formats.length; ++n) {
         var format = formats[n];

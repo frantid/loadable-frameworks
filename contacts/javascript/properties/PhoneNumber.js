@@ -166,14 +166,22 @@ PhoneNumber.normalizePhoneNumber = function (numberParam, wantSearchFormat) {
 
 	Assert.require(numberParamType === "object" || numberParamType === "string", "PhoneNumber.normalizePhoneNumber - number passed is not a string or an object");
 
-	//if it's not already parsed, we parse it
-	parsedPhoneNumber = (numberParamType === "string") ? PhoneNumberLib.Parse(numberParam, Globalization.Locale.getCurrentPhoneRegion().toUpperCase()) : numberParam
+	if( numberParamType !== "string" ) {
+		// parse was already done: only pick the subscriber number
+		numberParam = numberParam.subscriberNumber;
+	}
+	else {
+		parsedPhoneNumber = PhoneNumberLib.Parse(numberParam, Globalization.Locale.getCurrentPhoneRegion().toUpperCase());
+	}
 
 	// try to be compatible with Enyo g11n
 	normalizedNumber = "";
 	if(!parsedPhoneNumber) {
 		// if the parse failed, fallback to a simple generic normalized value
-		normalizedNumber = "---" + numberParam + "-";
+		if (!wantSearchFormat) {
+			normalizedNumber = "--";
+		}
+		normalizedNumber += "-" + numberParam + "-";
 	}
 	else {
 		// reverse of "+-countrycode-leading_digits-national_number_without_leading_digits-extension"
