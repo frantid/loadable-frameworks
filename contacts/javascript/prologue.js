@@ -43,6 +43,10 @@ var IMPORTS = MojoLoader.require({
 {
 	name: "globalization",
 	version: "1.0"
+},
+{
+	name: "phonenumberlib",
+	version: "1.0"
 });
 
 var Crypto = IMPORTS["foundations.crypto"];
