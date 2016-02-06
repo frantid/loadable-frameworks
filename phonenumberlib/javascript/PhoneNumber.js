@@ -370,3 +370,7 @@ var PhoneNumberLib = (function (dataBase) {
     Parse: ParseNumber,
   };
 })(PHONE_NUMBER_META_DATA);
+
+if( typeof exports !== 'undefined' ) {
+    exports.PhoneNumberLib = PhoneNumberLib;
+}

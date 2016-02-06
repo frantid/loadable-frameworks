@@ -54,6 +54,7 @@ var Foundations = IMPORTS.foundations;
 var Globalization = IMPORTS.globalization.Globalization;
 exports.Globalization = Globalization;
 var _ = IMPORTS.underscore._;
+var PhoneNumberLib = IMPORTS.phonenumberlib.PhoneNumberLib
 
 var Assert = Foundations.Assert;
 var Class = Foundations.Class;
