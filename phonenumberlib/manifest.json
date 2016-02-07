@@ -1,0 +1,12 @@
+{
+	"files":
+	{
+		"javascript": [
+		    "PhoneNumberMetadata.js",
+		    "PhoneNumberNormalizer.js",
+		    "PhoneNumber.js"
+		]
+	},
+	"builtinReady": true,
+	"builtinDeferred": true
+}
