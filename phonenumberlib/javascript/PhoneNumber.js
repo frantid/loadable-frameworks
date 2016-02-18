@@ -34,6 +34,14 @@ var PhoneNumberLib = (function (dataBase) {
 
   var regionCache = Object.create(null);
 
+  var geoCodingCache = Object.create(null);
+
+  // a bit hardcoded, maybe we can do better
+  var _rootDir = "/usr/palm/frameworks/phonenumberlib/version/1.0";
+  function _setRootDir(rootDir) {
+      _rootDir = rootDir;
+  }
+
   // Parse an array of strings into a convenient object. We store meta
   // data as arrays since thats much more compact than JSON.
   function ParseArray(array, encoding, obj) {
@@ -218,8 +226,7 @@ var PhoneNumberLib = (function (dataBase) {
     this.nationalNumber = number;
     this.internationalFormat = FormatNumber(this.regionMetaData, this.nationalNumber, true);
     this.nationalFormat = FormatNumber(this.regionMetaData, this.nationalNumber, false);
-    var internationalNumber = this.internationalFormat ? this.internationalFormat.replace(NON_DIALABLE_CHARS, "")
-                                                       : null;
+    this.internationalNumber = this.internationalFormat ? this.internationalFormat.replace(NON_DIALABLE_CHARS, "") : null;
     this.leadingDigit = FormatLeadingDigits(this.regionMetaData, this.nationalNumber);
   }
 
@@ -365,8 +372,88 @@ var PhoneNumberLib = (function (dataBase) {
     return !(isTooLong || isEmpty || NON_DIALABLE_CHARS_ONCE.test(number));
   }
 
+  function GetNumberGeolocation(number, cb) {
+      // Look in the cache if this JSON has already been parsed
+      if(typeof cb !== 'function') return;
+
+      if(number[0]==='+') {
+          number = number.substr(1);
+      }
+
+      var intlPrefix = ParseCountryCode(number);
+      if(!intlPrefix) {
+          cb("Unknown");
+          return;
+      }
+
+      function _findGeoLocationInCache() {
+          if(geoCodingCache) {
+              for(var i in geoCodingCache)
+              {
+                  if(number.substr(0,i.length) === i) {
+                      cb(geoCodingCache[i]);
+                      return true;
+                  }
+              }
+          }
+
+          return false;
+      }
+
+      function _findFromRawText(rawText) {
+          // the format of the raw text is the following:
+          //  - "#" means a comment
+          //  - otherwise lines are formatted so: <beginning of number>|"location string"
+          // the number are order alphabetically, so we can optimize the parsing
+          var foundChars = intlPrefix.length;
+          var currentChar = rawText.indexOf('\n'+number.substr(0, foundChars), currentChar);
+
+          while(currentChar<rawText.length && currentChar>=0) {
+              if(rawText[currentChar+foundChars+1] === '|') {
+                  // found it!
+                  var endLinePos = rawText.indexOf('\n', currentChar+foundChars+2);
+                  var foundPrefix = number.substr(0, foundChars);
+                  var foundLocation = rawText.substr(currentChar+foundChars+2, endLinePos-(currentChar+foundChars+2));
+                  return { "start": foundPrefix, "location": foundLocation };
+              }
+              foundChars++;
+              currentChar = rawText.indexOf('\n'+number.substr(0, foundChars), currentChar);
+          }
+
+          return null;
+      }
+
+      if(!_findGeoLocationInCache()) {
+          // load the corresponding JSON file from ../geocoding
+          var xhr = new XMLHttpRequest;
+          xhr.open("GET", _rootDir + "/geocoding/"+intlPrefix+".txt");
+          xhr.onreadystatechange = function() {
+              if( xhr.readyState === XMLHttpRequest.DONE ) {
+                  if( xhr.responseText ) {
+                      var foundGeoLoc = _findFromRawText(xhr.responseText);
+                      if(foundGeoLoc) {
+                          // put it in cache
+                          geoCodingCache[foundGeoLoc.start] = foundGeoLoc.location;
+                          // ... and return it
+                          cb(foundGeoLoc.location);
+                      }
+                      else {
+                          cb("Unknown");
+                      }
+                  }
+                  else {
+                    cb("Unknown");
+                  }
+              }
+          }
+          xhr.send();
+      }
+  }
+
   return {
     IsPlain: IsPlainPhoneNumber,
+    setRootDir: _setRootDir,
+    GetGeolocation: GetNumberGeolocation,
     Parse: ParseNumber,
   };
 })(PHONE_NUMBER_META_DATA);
