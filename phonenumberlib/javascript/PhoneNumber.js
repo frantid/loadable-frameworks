@@ -420,7 +420,8 @@ var PhoneNumberLib = (function (dataBase) {
               currentChar = rawText.indexOf('\n'+number.substr(0, foundChars), currentChar);
           }
 
-          return null;
+          // For this kind of phone number, we don't know the location
+          return { "start": number.substr(0, foundChars), "location": "Unknown" };
       }
 
       if(!_findGeoLocationInCache()) {
