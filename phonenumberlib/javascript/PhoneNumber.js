@@ -36,6 +36,8 @@ var PhoneNumberLib = (function (dataBase) {
 
   var geoCodingCache = Object.create(null);
 
+  var countriesCache = null;
+
   // a bit hardcoded, maybe we can do better
   var _rootDir = "/usr/palm/frameworks/phonenumberlib/version/1.0";
   function _setRootDir(rootDir) {
@@ -382,7 +384,7 @@ var PhoneNumberLib = (function (dataBase) {
 
       var intlPrefix = ParseCountryCode(number);
       if(!intlPrefix) {
-          cb("Unknown");
+          cb({});
           return;
       }
 
@@ -398,6 +400,33 @@ var PhoneNumberLib = (function (dataBase) {
           }
 
           return false;
+      }
+
+      function _findCountryFromCode(geoLocObj) {
+          if(countriesCache) {
+              if(typeof countriesCache[intlPrefix] != 'undefined') {
+                  geoLocObj.country = countriesCache[intlPrefix];
+              }
+              cb(geoLocObj);
+          }
+          else {
+              // load the corresponding JSON file from ../geocoding
+              var xhrIdd = new XMLHttpRequest;
+              xhrIdd.open("GET", _rootDir + "/geocoding/idd.json");
+              xhrIdd.onreadystatechange = function() {
+                  if( xhrIdd.readyState === XMLHttpRequest.DONE ) {
+                      if( xhrIdd.responseText ) {
+                          countriesCache = JSON.parse(xhrIdd.responseText);
+                          if( !countriesCache ) countriesCache = []; // if the parse failed, it won't improve next time...
+                          if(typeof countriesCache[intlPrefix] != 'undefined') {
+                              geoLocObj.country = countriesCache[intlPrefix];
+                          }
+                          cb(geoLocObj);
+                      }
+                  }
+              }
+              xhrIdd.send();
+          }
       }
 
       function _findFromRawText(rawText) {
@@ -420,8 +449,7 @@ var PhoneNumberLib = (function (dataBase) {
               currentChar = rawText.indexOf('\n'+number.substr(0, foundChars), currentChar);
           }
 
-          // For this kind of phone number, we don't know the location
-          return { "start": number.substr(0, foundChars), "location": "Unknown" };
+          return null;
       }
 
       if(!_findGeoLocationInCache()) {
@@ -430,21 +458,17 @@ var PhoneNumberLib = (function (dataBase) {
           xhr.open("GET", _rootDir + "/geocoding/"+intlPrefix+".txt");
           xhr.onreadystatechange = function() {
               if( xhr.readyState === XMLHttpRequest.DONE ) {
+                  var geoLocObj = {};
                   if( xhr.responseText ) {
                       var foundGeoLoc = _findFromRawText(xhr.responseText);
                       if(foundGeoLoc) {
                           // put it in cache
                           geoCodingCache[foundGeoLoc.start] = foundGeoLoc.location;
-                          // ... and return it
-                          cb(foundGeoLoc.location);
-                      }
-                      else {
-                          cb("Unknown");
+                          geoLocObj.location = foundGeoLoc.location;
                       }
                   }
-                  else {
-                    cb("Unknown");
-                  }
+                  // return the found location with the country
+                  _findCountryFromCode(geoLocObj);
               }
           }
           xhr.send();
