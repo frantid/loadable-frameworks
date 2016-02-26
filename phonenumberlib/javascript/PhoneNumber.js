@@ -418,7 +418,7 @@ var PhoneNumberLib = (function (dataBase) {
                       if( xhrIdd.responseText ) {
                           countriesCache = JSON.parse(xhrIdd.responseText);
                           if( !countriesCache ) countriesCache = []; // if the parse failed, it won't improve next time...
-                          if(typeof countriesCache[intlPrefix] != 'undefined') {
+                          if(typeof countriesCache[intlPrefix] !== 'undefined') {
                               geoLocObj.country = countriesCache[intlPrefix];
                           }
                           cb(geoLocObj);
@@ -458,7 +458,7 @@ var PhoneNumberLib = (function (dataBase) {
           xhr.open("GET", _rootDir + "/geocoding/"+intlPrefix+".txt");
           xhr.onreadystatechange = function() {
               if( xhr.readyState === XMLHttpRequest.DONE ) {
-                  var geoLocObj = {};
+                  var geoLocObj = { "parsed": true };
                   if( xhr.responseText ) {
                       var foundGeoLoc = _findFromRawText(xhr.responseText);
                       if(foundGeoLoc) {
