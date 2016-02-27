@@ -24,6 +24,7 @@ var PhoneNumberLib = (function (dataBase) {
                               "nationalPrefixFormattingRule",
                               "^possiblePattern$",
                               "^nationalPattern$",
+                              "^mobilePattern$",
                               "formats"];
 
   var FORMAT_ENCODING = ["^pattern$",
@@ -230,6 +231,9 @@ var PhoneNumberLib = (function (dataBase) {
     this.nationalFormat = FormatNumber(this.regionMetaData, this.nationalNumber, false);
     this.internationalNumber = this.internationalFormat ? this.internationalFormat.replace(NON_DIALABLE_CHARS, "") : null;
     this.leadingDigit = FormatLeadingDigits(this.regionMetaData, this.nationalNumber);
+    this.getGeolocation = function(cb) {
+        return GetNumberGeolocation(this, cb);
+    }
   }
 
   // Check whether the number is valid for the given region.
@@ -241,6 +245,11 @@ var PhoneNumberLib = (function (dataBase) {
   function IsNationalNumber(number, md) {
     return IsValidNumber(number, md) && md.nationalPattern.test(number);
   }
+
+    // Check whether the number is valid for the given region.
+    function IsMobileNumber(number, md) {
+      return md.mobilePattern.test(number);
+    }
 
   // Determine the country code a number starts with, or return null if
   // its not a valid country code.
@@ -374,9 +383,17 @@ var PhoneNumberLib = (function (dataBase) {
     return !(isTooLong || isEmpty || NON_DIALABLE_CHARS_ONCE.test(number));
   }
 
-  function GetNumberGeolocation(number, cb) {
+  function GetNumberGeolocation(phoneNumberObj, cb) {
       // Look in the cache if this JSON has already been parsed
       if(typeof cb !== 'function') return;
+
+      if(!phoneNumberObj ||
+         !phoneNumberObj.internationalNumber ||
+         !phoneNumberObj.regionMetaData || !phoneNumberObj.regionMetaData.countryCode) {
+          cb({});
+      }
+
+      var number = phoneNumberObj.internationalNumber;
 
       if(number[0]==='+') {
           number = number.substr(1);
@@ -393,7 +410,8 @@ var PhoneNumberLib = (function (dataBase) {
               for(var i in geoCodingCache)
               {
                   if(number.substr(0,i.length) === i) {
-                      cb(geoCodingCache[i]);
+                      // return the found location with the country
+                      _findCountryFromCode(geoCodingCache[i]);
                       return true;
                   }
               }
@@ -463,8 +481,15 @@ var PhoneNumberLib = (function (dataBase) {
                       var foundGeoLoc = _findFromRawText(xhr.responseText);
                       if(foundGeoLoc) {
                           // put it in cache
-                          geoCodingCache[foundGeoLoc.start] = foundGeoLoc.location;
                           geoLocObj.location = foundGeoLoc.location;
+                          geoCodingCache[foundGeoLoc.start] = geoLocObj;
+                      }
+                      else if(IsMobileNumber(phoneNumberObj.nationalNumber, phoneNumberObj.regionMetaData)) {
+                          geoLocObj.location = "Mobile";
+                          geoCodingCache[number] = geoLocObj;
+                      }
+                      else {
+                          geoCodingCache[number] = geoLocObj;
                       }
                   }
                   // return the found location with the country
