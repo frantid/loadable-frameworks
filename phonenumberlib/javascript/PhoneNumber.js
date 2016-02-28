@@ -391,6 +391,7 @@ var PhoneNumberLib = (function (dataBase) {
          !phoneNumberObj.internationalNumber ||
          !phoneNumberObj.regionMetaData || !phoneNumberObj.regionMetaData.countryCode) {
           cb({});
+          return;
       }
 
       var number = phoneNumberObj.internationalNumber;
